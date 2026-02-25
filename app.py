@@ -1,10 +1,15 @@
 import streamlit as st
 import PyPDF2
 
-st.set_page_config(page_title="AI Resume Analyzer")
+st.set_page_config(
+    page_title="AI Resume Analyzer",
+    page_icon="📄",
+    layout="wide"
+)
 
 st.title("📄 AI Resume Analyzer")
 st.write("Upload your resume (PDF) and get feedback.")
+st.divider()
 
 uploaded_file = st.file_uploader("Upload Resume (PDF only)", type=["pdf"])
 
@@ -23,7 +28,13 @@ if uploaded_file is not None:
 
     # Simple keyword check
     keywords = ["python", "machine learning", "data", "project", "sql"]
-    found = [word for word in keywords if word.lower() in resume_text.lower()]
+
+    resume_lower = resume_text.lower()
+    found = [word for word in keywords if word in resume_lower]
+    score = len(found) / len(keywords) * 100
+    st.subheader("📊 Resume Score")
+    st.progress(int(score))
+    st.write(f"Score: {score:.1f}%")
 
     st.subheader("✅ Keywords Found")
     st.write(found if found else "No important keywords found")
