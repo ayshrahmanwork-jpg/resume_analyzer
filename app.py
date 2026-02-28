@@ -1,17 +1,18 @@
 import streamlit as st
 import PyPDF2
+import google.generativeai as genai
 
-st.set_page_config(
-    page_title="AI Resume Analyzer",
-    page_icon="📄",
-    layout="wide"
-)
+# Configure Gemini
+genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+model = genai.GenerativeModel("models/gemini-2.5-flash")
+
+st.set_page_config(page_title="AI Resume Analyzer", layout="wide")
 
 st.title("📄 AI Resume Analyzer")
-st.write("Upload your resume (PDF) and get feedback.")
-st.divider()
+st.write("Upload your resume (PDF) and get AI-powered feedback.")
 
 uploaded_file = st.file_uploader("Upload Resume (PDF only)", type=["pdf"])
+
 
 def extract_text_from_pdf(file):
     reader = PyPDF2.PdfReader(file)
@@ -20,28 +21,39 @@ def extract_text_from_pdf(file):
         text += page.extract_text()
     return text
 
+
+def analyze_with_ai(resume_text):
+    model = genai.GenerativeModel("models/gemini-2.5-flash")
+
+    prompt = f"""
+You are an expert resume reviewer.
+
+Analyze the following resume and provide:
+
+1. Overall evaluation
+2. Key strengths
+3. Weaknesses
+4. Specific improvement suggestions
+
+Resume:
+{resume_text[:4000]}
+"""
+
+    response = model.generate_content(prompt)
+    return response.text
+
+
+# ================= MAIN =================
+
 if uploaded_file is not None:
     resume_text = extract_text_from_pdf(uploaded_file)
 
     st.subheader("📌 Resume Preview")
     st.text(resume_text[:1000])
 
-    # Simple keyword check
-    keywords = ["python", "machine learning", "data", "project", "sql"]
+    if st.button("🚀 Analyze with AI"):
+        with st.spinner("AI is analyzing your resume..."):
+            ai_feedback = analyze_with_ai(resume_text)
 
-    resume_lower = resume_text.lower()
-    found = [word for word in keywords if word in resume_lower]
-    score = len(found) / len(keywords) * 100
-    st.subheader("📊 Resume Score")
-    st.progress(int(score))
-    st.write(f"Score: {score:.1f}%")
-
-    st.subheader("✅ Keywords Found")
-    st.write(found if found else "No important keywords found")
-
-    st.subheader("💡 Suggestions")
-
-    if len(found) < 3:
-        st.warning("Add more technical keywords to strengthen your resume.")
-    else:
-        st.success("Good keyword coverage!")
+        st.subheader("🤖 AI Feedback")
+        st.write(ai_feedback)
